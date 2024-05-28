@@ -108,7 +108,7 @@ public class Main {
                 monitoredDataList.stream().filter(entry -> Duration.between(entry.getStartTime(), entry.getEndTime()).toMinutes() < 5).mapToInt(i -> 1).sum()
         );
         Map<String, Map<LocalDate, Double>> res = monitoredDataList.stream()
-                .collect(groupingBy(MonitoredData::getActivity, groupingBy(t->t.getStartTime().toLocalDate(), averagingDouble(MonitoredData::getDuration))));
+                .collect(groupingBy(MonitoredData::getActivity, groupingBy(t->t.getStartTime().toLocalDate(), averagingDouble(t -> Duration.between(t.getStartTime(), t.getEndTime()).toMinutes()))));
         System.out.println(res);
     }
 }
