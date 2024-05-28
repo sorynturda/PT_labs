@@ -13,11 +13,11 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.summingInt;
-import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.*;
 
 class MonitoredData {
     LocalDateTime startTime;
@@ -53,7 +53,9 @@ class MonitoredData {
     public void setActivity(String activity) {
         this.activity = activity;
     }
-
+    public long getDuration(){
+        return Duration.between(startTime, endTime).toMinutes();
+    }
     @Override
     public String toString() {
         return "MonitoredData{" +
@@ -103,8 +105,10 @@ public class Main {
             return null;
         }).toList();
         System.out.println(
-                monitoredDataList.stream().filter(entry -> Duration.between(entry.getStartTime(), entry.getEndTime()).toMinutes() < 5).mapToInt(i->1).sum()
+                monitoredDataList.stream().filter(entry -> Duration.between(entry.getStartTime(), entry.getEndTime()).toMinutes() < 5).mapToInt(i -> 1).sum()
         );
-
+        Map<String, Map<LocalDate, Double>> res = monitoredDataList.stream()
+                .collect(groupingBy(MonitoredData::getActivity, groupingBy(t->t.getStartTime().toLocalDate(), averagingDouble(MonitoredData::getDuration))));
+        System.out.println(res);
     }
 }
