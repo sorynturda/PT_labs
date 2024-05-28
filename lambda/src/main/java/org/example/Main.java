@@ -3,39 +3,44 @@ package org.example;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
-import java.util.TimeZone;
-import java.util.Timer;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.summingInt;
 import static java.util.stream.Collectors.toList;
 
-class MonitoredData{
-    TimeZone startTime;
-    TimeZone endTime;
+class MonitoredData {
+    String startTime;
+    String endTime;
     String activity;
 
-    public MonitoredData(TimeZone startTime, TimeZone endTime, String activity) {
+    public MonitoredData(String startTime, String endTime, String activity) {
         this.startTime = startTime;
         this.endTime = endTime;
         this.activity = activity;
     }
 
-    public TimeZone getStartTime() {
+    public String getStartTime() {
         return startTime;
     }
 
-    public void setStartTime(TimeZone startTime) {
+    public void setStartTime(String startTime) {
         this.startTime = startTime;
     }
 
-    public TimeZone getEndTime() {
+    public String getEndTime() {
         return endTime;
     }
 
-    public void setEndTime(TimeZone endTime) {
+    public void setEndTime(String endTime) {
         this.endTime = endTime;
     }
 
@@ -46,7 +51,17 @@ class MonitoredData{
     public void setActivity(String activity) {
         this.activity = activity;
     }
+
+    @Override
+    public String toString() {
+        return "MonitoredData{" +
+                "startTime='" + startTime + '\'' +
+                ", endTime='" + endTime + '\'' +
+                ", activity='" + activity + '\'' +
+                '}';
+    }
 }
+
 class Product {
     private String name;
 
@@ -73,10 +88,29 @@ class Product {
 public class Main {
     public static void main(String[] args) throws IOException {
         //regex ([0-9-: ]+)\t+([0-9-: ]+)\t+([\D]+$)
-        Stream<String> stream = Files.lines(Paths.get("products.txt"));
-        List<Product> productList = stream.map(line -> new Product(line))
-                .collect(toList());
-        productList.stream()
-                .forEach(System.out::println);
+        Pattern pattern = Pattern.compile("([0-9-: ]+)\\t+([0-9-: ]+)\\t+(\\D+$)");
+        Stream<String> stream = Files.lines(Paths.get("Activities.txt"));
+
+//        String s = "2011-11-28 20:21:15		2011-11-29 02:06:00		Spare_Time/TV ";
+        List<MonitoredData> monitoredDataList = stream.map(line ->
+        {
+            Matcher matcher = pattern.matcher(line);
+            if (matcher.find())
+                return new MonitoredData(matcher.group(1).trim(),
+                        matcher.group(2).trim(), matcher.group(3).trim());
+            return null;
+        }).toList();
+        List<Integer> startTime = monitoredDataList.stream()
+                .map(entry -> LocalDate.parse(entry.getStartTime().split(" ")[0]).getDayOfYear())
+                .toList();
+        List<Integer> endTime = monitoredDataList.stream()
+                .map(entry -> LocalDate.parse(entry.getEndTime().split(" ")[0]).getDayOfYear())
+                .toList();
+        System.out.println(Stream.concat(startTime.stream(), endTime.stream()).distinct().mapToInt(i -> 1).sum());
+        //        List<Product> productList = stream.map(line -> new Product(line))
+//                .collect(toList());
+//        productList.stream()
+
+//                .forEach(System.out::println);
     }
 }
