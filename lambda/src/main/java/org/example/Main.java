@@ -3,8 +3,10 @@ package org.example;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -18,29 +20,29 @@ import static java.util.stream.Collectors.summingInt;
 import static java.util.stream.Collectors.toList;
 
 class MonitoredData {
-    String startTime;
-    String endTime;
+    LocalDateTime startTime;
+    LocalDateTime endTime;
     String activity;
 
-    public MonitoredData(String startTime, String endTime, String activity) {
+    public MonitoredData(LocalDateTime startTime, LocalDateTime endTime, String activity) {
         this.startTime = startTime;
         this.endTime = endTime;
         this.activity = activity;
     }
 
-    public String getStartTime() {
+    public LocalDateTime getStartTime() {
         return startTime;
     }
 
-    public void setStartTime(String startTime) {
+    public void setStartTime(LocalDateTime startTime) {
         this.startTime = startTime;
     }
 
-    public String getEndTime() {
+    public LocalDateTime getEndTime() {
         return endTime;
     }
 
-    public void setEndTime(String endTime) {
+    public void LocalDateTime(LocalDateTime endTime) {
         this.endTime = endTime;
     }
 
@@ -90,27 +92,19 @@ public class Main {
         //regex ([0-9-: ]+)\t+([0-9-: ]+)\t+([\D]+$)
         Pattern pattern = Pattern.compile("([0-9-: ]+)\\t+([0-9-: ]+)\\t+(\\D+$)");
         Stream<String> stream = Files.lines(Paths.get("Activities.txt"));
-
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 //        String s = "2011-11-28 20:21:15		2011-11-29 02:06:00		Spare_Time/TV ";
         List<MonitoredData> monitoredDataList = stream.map(line ->
         {
             Matcher matcher = pattern.matcher(line);
             if (matcher.find())
-                return new MonitoredData(matcher.group(1).trim(),
-                        matcher.group(2).trim(), matcher.group(3).trim());
+                return new MonitoredData(LocalDateTime.parse(matcher.group(1).trim(), formatter),
+                        LocalDateTime.parse(matcher.group(2).trim(), formatter), matcher.group(3).trim());
             return null;
         }).toList();
-        List<Integer> startTime = monitoredDataList.stream()
-                .map(entry -> LocalDate.parse(entry.getStartTime().split(" ")[0]).getDayOfYear())
-                .toList();
-        List<Integer> endTime = monitoredDataList.stream()
-                .map(entry -> LocalDate.parse(entry.getEndTime().split(" ")[0]).getDayOfYear())
-                .toList();
-        System.out.println(Stream.concat(startTime.stream(), endTime.stream()).distinct().mapToInt(i -> 1).sum());
-        //        List<Product> productList = stream.map(line -> new Product(line))
-//                .collect(toList());
-//        productList.stream()
+        System.out.println(
+                monitoredDataList.stream().filter(entry -> Duration.between(entry.getStartTime(), entry.getEndTime()).toMinutes() < 5).mapToInt(i->1).sum()
+        );
 
-//                .forEach(System.out::println);
     }
 }
